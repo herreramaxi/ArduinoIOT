@@ -1,21 +1,33 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
+#include "Base64.h"
 #include "DHTesp.h"
-//#include "DHT.h"
-
-//#include <SimpleDHT.h>
-
-const char* ssid     = "VMA1732E8"; // Your ssid
-const char* password = "mJsrzss2nzuV"; // Your Password
 
 int pin = 2;
-//DHT dht(pin, DHTTYPE);
-//SimpleDHT11 dht11(pin);
 DHTesp dht;
 
 WiFiServer server(80);
 
+struct WifiCredentials{
+  char* ssid;
+  char* password;
+};
+
 void setup() {
+  struct WifiCredentials credentials;
+  char authorization[] = "Vk1BMTczMkU4Om1Kc3J6c3Mybnp1Vg==";
+  int inputStringLength = sizeof(authorization);
+  int decodedLength = Base64.decodedLength(authorization, inputStringLength);
+  char decodedString[decodedLength];
+
+  Base64.decode(decodedString, authorization, inputStringLength);
+
+  credentials.ssid  = strtok(decodedString, ":");
+  bool userEmpty = credentials.ssid == NULL ? true : strlen(credentials.ssid) == 0;
+  
+  credentials.password  = strtok(NULL, ":");
+  bool passwordEmpty = credentials.password  == NULL ? true : strlen(credentials.password ) == 0;
+
   Serial.begin(115200);
   delay(10);
   Serial.println();
@@ -26,10 +38,16 @@ void setup() {
   Serial.println();
   Serial.println();
   Serial.print("Connecting to ");
-  Serial.println(ssid);
+  Serial.println(credentials.ssid);
+  Serial.println("UserEmpty: " + (String)userEmpty);
+  Serial.println("PasswordEmpty: " + (String)passwordEmpty);
+  Serial.println("inputStringLength: " + (String)inputStringLength);
+  Serial.println("decodedLength: " + (String)decodedLength);
+  Serial.println("decodedString: " + (String)decodedString);
+  Serial.println("User: " + (String)credentials.ssid);
+  Serial.println("Password: " + (String)credentials.password);
 
-  WiFi.begin(ssid, password);
-
+  WiFi.begin(credentials.ssid, credentials.password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
@@ -52,7 +70,7 @@ void loop() {
   float temperature = dht.getTemperature();
 
   SendTemperatureAndHumidity(temperature, humidity);
-  
+
   WiFiClient client = server.available();
   client.println("HTTP/1.1 200 OK");
   client.println("Content-Type: text/html");
@@ -95,7 +113,7 @@ void SendTemperatureAndHumidity(float temperature, float humidity) {
   Serial.print("\t\t");
   Serial.print(temperatureInt, 1);
   Serial.println("");
-   
+
   //const int httpPort = 80;
   const String protocol = "http";
   const String endpoint = "/api/iot/posttemperature";
@@ -104,18 +122,18 @@ void SendTemperatureAndHumidity(float temperature, float humidity) {
   const int httpPort = 80;
   const String hostName = host + ":" + (String)httpPort;
   const String url = protocol + "://" + hostName + endpoint;
-  
-   String jsonData = GetTemperatureAndHumidityAsJson(temperature, humidity);
-  
-   HTTPClient http;
-   http.begin(url);
-   http.addHeader("Content-Type", "application/json");
-   int httpCode = http.POST(jsonData);
-   String payload = http.getString();
- 
-   Serial.println("httpCode: " + (String)httpCode); 
-   Serial.println("payload: "+ payload); 
-   http.end();
+
+  String jsonData = GetTemperatureAndHumidityAsJson(temperature, humidity);
+
+  HTTPClient http;
+  http.begin(url);
+  http.addHeader("Content-Type", "application/json");
+  int httpCode = http.POST(jsonData);
+  String payload = http.getString();
+
+  Serial.println("httpCode: " + (String)httpCode);
+  Serial.println("payload: " + payload);
+  http.end();
 }
 
 String GetTemperatureAndHumidityAsJson(int temperature, int humidity) {
