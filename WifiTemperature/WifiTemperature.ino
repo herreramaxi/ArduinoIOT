@@ -1,53 +1,32 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
-#include "Base64.h"
 #include "DHTesp.h"
+#include "WifiCredentials.h"
 
 int pin = 2;
 DHTesp dht;
 
 WiFiServer server(80);
 
-struct WifiCredentials{
-  char* ssid;
-  char* password;
-};
-
 void setup() {
-  struct WifiCredentials credentials;
-  char authorization[] = "Vk1BMTczMkU4Om1Kc3J6c3Mybnp1Vg==";
-  int inputStringLength = sizeof(authorization);
-  int decodedLength = Base64.decodedLength(authorization, inputStringLength);
-  char decodedString[decodedLength];
-
-  Base64.decode(decodedString, authorization, inputStringLength);
-
-  credentials.ssid  = strtok(decodedString, ":");
-  bool userEmpty = credentials.ssid == NULL ? true : strlen(credentials.ssid) == 0;
   
-  credentials.password  = strtok(NULL, ":");
-  bool passwordEmpty = credentials.password  == NULL ? true : strlen(credentials.password ) == 0;
-
   Serial.begin(115200);
   delay(10);
   Serial.println();
+  WifiCredentials credentials = WifiCredentials("Vk1BMTczMkU4Om1Kc3J6c3Mybnp1Vg==");
+  
   dht.setup(pin, DHTesp::DHT11); // Connect DHT sensor to GPIO 2
 
   // Connect to WiFi network
   WiFi.mode(WIFI_STA);
   Serial.println();
   Serial.println();
-  Serial.print("Connecting to ");
-  Serial.println(credentials.ssid);
-  Serial.println("UserEmpty: " + (String)userEmpty);
-  Serial.println("PasswordEmpty: " + (String)passwordEmpty);
-  Serial.println("inputStringLength: " + (String)inputStringLength);
-  Serial.println("decodedLength: " + (String)decodedLength);
-  Serial.println("decodedString: " + (String)decodedString);
-  Serial.println("User: " + (String)credentials.ssid);
-  Serial.println("Password: " + (String)credentials.password);
+ 
+  Serial.println("Credentials valid: " + (String)credentials.IsValid()); 
+  Serial.println("User: " + (String)credentials.SSID());
+  Serial.println("Password: " + (String)credentials.Password());
 
-  WiFi.begin(credentials.ssid, credentials.password);
+  WiFi.begin(credentials.SSID(), credentials.Password());
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
