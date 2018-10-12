@@ -83,14 +83,11 @@ void SendTemperatureAndHumidity(float temperature, float humidity) {
     return;
   }
 
-  int temperatureInt = (int)temperature;
-  int humidityInt = (int)humidity;
-
   Serial.print(dht.getStatusString());
   Serial.print("\t");
-  Serial.print(humidityInt, 1);
+  Serial.print(humidity, 2);
   Serial.print("\t\t");
-  Serial.print(temperatureInt, 1);
+  Serial.print(temperature, 2);
   Serial.println("");
 
   //const int httpPort = 80;
@@ -115,7 +112,7 @@ void SendTemperatureAndHumidity(float temperature, float humidity) {
   http.end();
 }
 
-String GetTemperatureAndHumidityAsJson(int temperature, int humidity) {
+String GetTemperatureAndHumidityAsJson(float temperature, float humidity) {
   String data = "{\"temperature\":\"";
   data +=  (String)temperature + "\",";
   data += "\"humidity\":\"";
